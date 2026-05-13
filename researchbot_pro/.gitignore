@@ -1,0 +1,38 @@
+# ── Python ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ── Virtual Environment ──────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Environment Variables ────────────────────
+.env
+*.env
+
+# ── Project Outputs ──────────────────────────
+outputs/*.md
+outputs/*.txt
+outputs/*.pdf
+!outputs/.gitkeep
+
+# ── IDE / Editor ────────────────────────────
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────
+logs/
+*.log
