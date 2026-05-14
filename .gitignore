@@ -1,0 +1,27 @@
+# Virtual Environment
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Environment Variables (SECRETS!)
+.env
+*.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Outputs & Uploads
+outputs/
+uploads/
+*.log
+
+# Python
+*.egg-info/
+dist/
+build/
