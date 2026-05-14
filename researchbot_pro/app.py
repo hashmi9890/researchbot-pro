@@ -13,85 +13,142 @@ except:
 st.set_page_config(
     page_title="StrategyAI Pro",
     page_icon="🎯",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 # ═══════════════════════════════════════════════
-# 🎨 CLAUDE-STYLE CSS
-# ═══════════════════════════════════════════════
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    * { font-family: 'Inter', sans-serif; }
-    
-    .stApp { background: #0f0f0f; color: #ececec; }
-    [data-testid="stSidebar"] { background: #1a1a1a; border-right: 1px solid #2d2d2d; }
-    
-    /* Input Area Styling */
-    .stTextArea textarea {
-        background: #1a1a1a;
-        border: 1px solid #3d3d3d;
-        border-radius: 12px;
-        color: white;
-        font-size: 16px;
-        padding: 16px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .stTextArea textarea:focus {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
-    }
-    
-    /* Chat Bubbles */
-    .user-msg {
-        background: #2d2d2d;
-        border-radius: 12px 12px 0 12px;
-        padding: 16px 20px;
-        margin: 10px 0 10px auto;
-        max-width: 85%;
-        clear: both;
-        float: right;
-    }
-    .ai-msg {
-        background: #1e1e2e;
-        border-left: 4px solid #4f46e5;
-        border-radius: 0 12px 12px 12px;
-        padding: 16px 20px;
-        margin: 10px auto 10px 0;
-        max-width: 90%;
-        clear: both;
-        float: left;
-    }
-    .clearfix::after { content: ""; clear: both; display: table; }
-    
-    /* Buttons */
-    .stButton>button {
-        background: #4f46e5; color: white; border: none;
-        border-radius: 8px; padding: 12px 24px; font-weight: 600;
-        transition: all 0.3s; width: 100%;
-    }
-    .stButton>button:hover { background: #6366f1; transform: translateY(-2px); }
-    
-    #MainMenu, footer, .stDeployButton { visibility: hidden; }
-</style>
-""", unsafe_allow_html=True)
-
-# ═══════════════════════════════════════════════
-# 🧠 SESSION STATE (Auto-Clear Logic)
-# ═══════════════════════════════════════════════
-if 'counter' not in st.session_state:
-    st.session_state.counter = 0
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
-if 'selected_agent' not in st.session_state:
-    st.session_state.selected_agent = "🎯 All Agents"
-
-# ═══════════════════════════════════════════════
-# 🎛️ SIDEBAR (Agent Selection)
+# 🎛️ SIDEBAR (Features & Settings)
 # ═══════════════════════════════════════════════
 with st.sidebar:
-    st.markdown("## 🎯 Command Center")
+    st.title("🎯 Command Center")
     st.markdown("---")
     
-    agents = [
-        ("🎯 All Agents")]
+    # Agent Selection
+    st.subheader("🤖 Select Agent")
+    agent_mode = st.radio(
+        "Choose mode:",
+        ["🎯 All Agents (Comprehensive)", "👔 CEO Only (Strategy)", "💰 CFO Only (Finance)", "🧩 Problem Solver (Creative)"],
+        index=0
+    )
+    
+    st.markdown("---")
+    creativity = st.slider("AI Creativity Level", 0.0, 1.0, 0.3, 0.1)
+    
+    if GROQ_API_KEY:
+        st.success("✅ API Key Connected")
+    else:
+        st.error("❌ API Key Missing in Secrets")
+        
+    st.markdown("---")
+    st.caption("Built by Abdullah Hashmi")
+
+# ═══════════════════════════════════════════════
+# 🏠 MAIN INTERFACE
+# ═══════════════════════════════════════════════
+st.title("🎯 StrategyAI Pro")
+st.caption("Executive Intelligence Platform - Ask anything about business strategy.")
+st.markdown("---")
+
+# 1. INPUT BOX (Top Pe)
+# Hum session state use karenge taake clear kar saken
+if "user_input" not in st.session_state:
+    st.session_state.user_input = ""
+
+user_query = st.text_area(
+    "💬 Describe your business challenge:",
+    value=st.session_state.user_input,
+    height=120,
+    placeholder="e.g., How can we increase our SaaS revenue by 50% in 6 months without hiring more staff?",
+    key="input_area" 
+)
+
+# 2. BUTTONS
+col_btn, col_clear = st.columns([4, 1])
+
+with col_btn:
+    generate_btn = st.button("🚀 Generate Strategy", type="primary", use_container_width=True)
+
+with col_clear:
+    clear_btn = st.button("🗑️ Clear All", use_container_width=True)
+
+# ═══════════════════════════════════════════════
+# 🧠 LOGIC & PROCESSING
+# ═══════════════════════════════════════════════
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Clear Button Logic
+if clear_btn:
+    st.session_state.messages = []
+    st.session_state.user_input = ""
+    st.rerun()
+
+# Generate Button Logic
+if generate_btn:
+    if not user_query.strip():
+        st.warning("⚠️ Please enter a challenge first!")
+    elif not GROQ_API_KEY:
+        st.error("❌ API Key missing! Add it in Streamlit Secrets.")
+    else:
+        # Add user message to history
+        st.session_state.messages.append({"role": "user", "content": user_query})
+        
+        # AUTO-CLEAR INPUT BOX for next question
+        st.session_state.user_input = "" 
+        
+        with st.spinner(f"🤖 {agent_mode.split(' ')[1]} is analyzing..."):
+            try:
+                import groq
+                client = groq.Groq(api_key=GROQ_API_KEY)
+                
+                # Set System Prompt based on Agent
+                if "CEO" in agent_mode:
+                    sys_prompt = "You are a Fortune 500 CEO. Provide strategic analysis in bullet points."
+                elif "CFO" in agent_mode:
+                    sys_prompt = "You are a CFO. Provide financial analysis with numbers, ROI, and risk."
+                elif "Solver" in agent_mode:
+                    sys_prompt = "You are a creative consultant. Provide innovative, out-of-box solutions."
+                else:
+                    sys_prompt = "You are a team of CEO, CFO, and Problem Solver. Provide comprehensive analysis with sections for Strategy, Finance, and Solutions."
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    temperature=creativity,
+                    messages=[
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": user_query}
+                    ]
+                )
+                
+                ai_response = response.choices[0].message.content
+                st.session_state.messages.append({"role": "assistant", "content": ai_response})
+                
+                # Refresh page to show result and clear input
+                st.rerun()
+                
+            except Exception as e:
+                st.error(f"Error: {str(e)}")
+
+# ═══════════════════════════════════════════════
+# 📜 DISPLAY CHAT HISTORY (Neeche Output)
+# ═══════════════════════════════════════════════
+if st.session_state.messages:
+    st.markdown("---")
+    st.subheader("📊 Analysis Results")
+    
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            if msg["role"] == "user":
+                st.write(msg["content"])
+            else:
+                st.markdown(msg["content"])
+                
+    # Download Button at the end
+    last_response = st.session_state.messages[-1]['content']
+    st.download_button(
+        label="📥 Download Report as Markdown",
+        data=last_response,
+        file_name=f"Strategy_Report_{datetime.now().strftime('%Y%m%d_%H%M')}.md",
+        mime="text/markdown"
+    )
